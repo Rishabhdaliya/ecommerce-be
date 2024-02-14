@@ -5,50 +5,35 @@ import uploadImage from "../middleware/uploadImage.js";
 
 const signUp = async (req, res) => {
   try {
-    // Use uploadImage middleware to handle profile picture upload
-    uploadImage(req, res, async (err) => {
-      if (err instanceof multer.MulterError) {
-        // A Multer error occurred when uploading
-        return res
-          .status(500)
-          .send({ message: "Profile picture upload failed." });
-      } else if (err) {
-        // An unknown error occurred when uploading
-        return res.status(500).send({ message: "Internal server error." });
-      }
+    if (!req.body.email) {
+      return res.status(400).send({ message: "Please provide an email." });
+    }
 
-      if (!req.body.email) {
-        return res.status(400).send({ message: "Please provide an email." });
-      }
+    const existingUser = await User.findOne({ email: req.body.email });
 
-      const existingUser = await User.findOne({ email: req.body.email });
+    if (existingUser) {
+      return res.status(400).send({ message: "Email already exists." });
+    }
 
-      if (existingUser) {
-        return res.status(400).send({ message: "Email already exists." });
-      }
+    let pass = req.body.password;
+    const salt = bcrypt.genSaltSync(10);
+    const encryptedPassword = bcrypt.hashSync(pass, salt);
 
-      let pass = req.body.password;
-      const salt = bcrypt.genSaltSync(10);
-      const encryptedPassword = bcrypt.hashSync(pass, salt);
+    // Get profile picture filename from req.file
 
-      // Get profile picture filename from req.file
-      const profilePicture = req.file ? req.file.filename : null;
+    const newUser = new User({
+      name: req.body.name,
+      email: req.body.email,
+      password: pass,
+      encryptedPassword: encryptedPassword,
+      role: req.body.role || "user",
+    });
 
-      const newUser = new User({
-        name: req.body.name,
-        email: req.body.email,
-        password: pass,
-        encryptedPassword: encryptedPassword,
-        role: req.body.role || "user",
-        profilePicture: profilePicture, // Add profilePicture to user object
-      });
+    const savedUser = await newUser.save();
 
-      const savedUser = await newUser.save();
-
-      res.status(200).send({
-        message: "Successfully created new user.",
-        data: savedUser,
-      });
+    res.status(200).send({
+      message: "Successfully created new user.",
+      data: savedUser,
     });
   } catch (err) {
     console.error(err);

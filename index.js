@@ -3,7 +3,7 @@ import cors from "cors";
 import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import userRouter from "./router/user.router.js";
+import userRouter from "./src/router/user.router.js";
 
 dotenv.config();
 
@@ -34,7 +34,9 @@ app.get("/", function (req, res) {
   res.send("Health check up");
 });
 
-app.use("/api/v1/user", userRouter);
+userRouter(app);
+
+// app.use("/api/v1/user", userRouter); // Use the imported router here
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
